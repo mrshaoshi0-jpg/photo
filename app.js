@@ -246,6 +246,12 @@
         img.src = URL.createObjectURL(item.thumb);
         img.loading = 'lazy';
         el.appendChild(img);
+      } else {
+        // Fallback placeholder
+        const ph = document.createElement('div');
+        ph.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#3A3A3C;font-size:32px;';
+        ph.textContent = item.type === 'video' ? '🎬' : '🖼️';
+        el.appendChild(ph);
       }
 
       if (item.type === 'video') {
@@ -326,22 +332,13 @@
   // ========== Import ==========
   async function handleFiles(files) {
     if (!files.length) return;
-    toast(t('successImport') + '...');
-    const albumId = state.currentAlbumId && state.currentAlbumId !== 'all'
-      ? state.currentAlbumId
-      : (state.albums[0] ? state.albums[0].id : null);
+    toast((currentLang === 'zh' ? '正在导入...' : 'Importing...') + ' (' + files.length + ')');
 
-    // If no album, create one
-    let targetAlbum = albumId;
+    let targetAlbum = state.currentAlbumId && state.currentAlbumId !== 'all'
+      ? state.currentAlbumId
+      : null;
+
     if (!targetAlbum) {
-      const newAlbum = {
-        id: mediaUtils.uid(),
-        name: t('allPhotos'),
-        created: Date.now()
-      };
-      // Actually we don't force, just put in a default
-      targetAlbum = 'default';
-      // Better: create "Recents" if needed
       const recents = state.albums.find(a => a.name === 'Recents' || a.name === '最近项目');
       if (recents) {
         targetAlbum = recents.id;
@@ -353,31 +350,37 @@
       }
     }
 
+    let successCount = 0;
     for (const file of files) {
       if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
+      try {
+        const isVideo = file.type.startsWith('video/');
+        const thumb = await mediaUtils.generateThumbnail(file);
+        let duration = 0;
+        if (isVideo) {
+          duration = await mediaUtils.getVideoDuration(file);
+        }
 
-      const thumb = await mediaUtils.generateThumbnail(file);
-      let duration = 0;
-      if (file.type.startsWith('video/')) {
-        duration = await mediaUtils.getVideoDuration(file);
+        const item = {
+          id: mediaUtils.uid(),
+          albumId: targetAlbum,
+          type: isVideo ? 'video' : 'image',
+          name: file.name,
+          created: file.lastModified || Date.now(),
+          size: file.size,
+          mime: file.type,
+          duration,
+          blob: file,
+          thumb: thumb
+        };
+        await db.saveMedia(item);
+        successCount++;
+      } catch (err) {
+        console.warn('Import failed for', file.name, err);
       }
-
-      const item = {
-        id: mediaUtils.uid(),
-        albumId: targetAlbum,
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-        name: file.name,
-        created: file.lastModified || Date.now(),
-        size: file.size,
-        mime: file.type,
-        duration,
-        blob: file,
-        thumb: thumb
-      };
-      await db.saveMedia(item);
     }
 
-    toast(t('successImport'));
+    toast(t('successImport') + ' (' + successCount + ')');
     if (state.currentAlbumId) {
       await loadMedia(state.currentAlbumId);
     } else {
