@@ -10,7 +10,6 @@ A privacy-oriented, offline-capable photo and video gallery PWA for iPhone Safar
 - Album creation, browsing, moving, and multi-select deletion
 - Video covers captured from the first decoded frame, with duration labels
 - Full-screen photo/video viewer; pinch-to-zoom for photos
-- Basic photo crop
 - Export selected originals through the iOS share sheet when supported, or browser downloads
 - Traditional Chinese / English interface
 - Light/dark appearance, PWA home-screen support, and offline application-shell caching
@@ -25,8 +24,8 @@ This is a static HTML/CSS/JavaScript app. No framework, package installation, or
 4. Configure the project:
    - Production branch: `main`
    - Framework preset: `None`
-   - Build command: leave blank
-   - Build output directory: `.`
+   - Build command: `mkdir -p dist && cp index.html styles.css app.js db.js i18n.js media.js pattern.js sw.js manifest.json icon-192.png icon-512.png dist/`
+   - Build output directory: `dist`
    - Root directory: `/` (the repository root)
 5. Select **Save and Deploy**. Cloudflare will publish a `*.pages.dev` URL.
 6. Open that URL once in Safari on the iPhone while online. Wait for the page to load, then use **Share** → **Add to Home Screen**.
