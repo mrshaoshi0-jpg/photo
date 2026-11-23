@@ -31,6 +31,18 @@
     }
 
     bindEvents();
+
+    // Re-lock after the app has been in the background for one minute.
+    // Short interruptions, such as opening the iOS photo picker, will not interrupt import.
+    let hiddenAt = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else {
+        if (hiddenAt && Date.now() - hiddenAt >= 60000) lockApp();
+        hiddenAt = 0;
+      }
+    });
   }
 
   function showSetup() {
@@ -654,6 +666,70 @@
     await loadAlbums();
   }
 
+  // ========== Export ==========
+  function downloadFiles(files) {
+    files.forEach((file, index) => {
+      setTimeout(() => {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name || 'photo';
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }, index * 450);
+    });
+    toast(t('exportSuccess'));
+  }
+
+  async function exportSelected() {
+    const ids = [...state.selected];
+    if (!ids.length) {
+      toast(t('exportEmpty'));
+      return;
+    }
+
+    const records = (await Promise.all(ids.map(id => db.getMedia(id)))).filter(Boolean);
+    const files = records.map(item => new File(
+      [item.blob],
+      item.name || (item.type === 'video' ? 'video' : 'photo'),
+      {
+        type: item.mime || item.blob.type || 'application/octet-stream',
+        lastModified: item.created || Date.now()
+      }
+    ));
+    if (!files.length) {
+      toast(t('exportEmpty'));
+      return;
+    }
+
+    if (navigator.share && navigator.canShare) {
+      try {
+        if (navigator.canShare({ files })) {
+          await navigator.share({ files, title: t('export') });
+          toast(t('exportSuccess'));
+          return;
+        }
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        console.warn('Share export unavailable; falling back to downloads.', error);
+      }
+    }
+    downloadFiles(files);
+  }
+
+  function lockApp() {
+    if (!state.unlocked) return;
+    closeCrop();
+    closeViewer();
+    state.unlocked = false;
+    $('#more-menu').classList.add('hidden');
+    $('#app').classList.add('hidden');
+    showLock();
+  }
+
   // ========== Events ==========
   function bindEvents() {
     $('#btn-back').onclick = showAlbumsView;
@@ -699,6 +775,10 @@
       $('#more-menu').classList.toggle('hidden');
     };
     document.addEventListener('click', () => $('#more-menu').classList.add('hidden'));
+
+    $('#menu-lock').onclick = lockApp;
+
+    $('#menu-export').onclick = exportSelected;
 
     $('#menu-change-pass').onclick = async () => {
       if (confirm(currentLang === 'zh' ? '确定要重新设置图案密码？' : 'Reset pattern lock?')) {
