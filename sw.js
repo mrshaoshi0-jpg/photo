@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ios-photos-v3';
+const CACHE_NAME = 'ios-photos-v4';
 const ASSETS = [
   './',
   './index.html',
