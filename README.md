@@ -1,60 +1,47 @@
-# Offline Photos / 相册 (iOS-style PWA)
+# Offline Photos / 離線相簿
 
-A fully offline-capable photo & video album web app that can be added to iPhone Home Screen via Safari.
+A privacy-oriented, offline-capable photo and video gallery PWA for iPhone Safari.
 
 ## Features
 
-- **Pattern Lock (九宫格手势密码)**: Set on first launch, required every time
-- **Multiple Albums**: Create, browse, move media between albums
-- **Import** photos & videos from device (Photos app via file picker)
-- **Video thumbnails**: First frame as cover + duration badge
-- **Photo viewer** with pinch-to-zoom
-- **Simple photo crop**
-- **Select & Delete / Move**
-- **Dark / Light mode** automatic (follows system)
-- **Bilingual** Chinese / English (toggle button)
-- **Offline**: Service Worker + IndexedDB (media stored locally)
-- **PWA**: Add to Home Screen, standalone mode, custom icons
+- Nine-dot pattern lock, with manual lock and automatic relock after the app has been in the background for one minute
+- Import photos and videos from the iPhone photo picker
+- Store originals and thumbnails in this browser's IndexedDB
+- Album creation, browsing, moving, and multi-select deletion
+- Video covers captured from the first decoded frame, with duration labels
+- Full-screen photo/video viewer; pinch-to-zoom for photos
+- Basic photo crop
+- Export selected originals through the iOS share sheet when supported, or browser downloads
+- Traditional Chinese / English interface
+- Light/dark appearance, PWA home-screen support, and offline application-shell caching
 
-## How to deploy on GitHub Pages
+## Deploy to Cloudflare Pages
 
-1. Create a new GitHub repository (public).
-2. Upload **all files** in this folder to the root of the repository (or put them in a `/docs` folder).
-3. Go to repository **Settings → Pages**.
-4. Set Source to `Deploy from a branch` → Branch `main` (or `master`) → folder `/ (root)` or `/docs`.
-5. Wait 1–2 minutes, then open the provided URL (e.g. `https://yourname.github.io/repo-name/`).
+This is a static HTML/CSS/JavaScript app. No framework, package installation, or build step is needed.
 
-## Add to iPhone Home Screen
+1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/).
+2. Go to **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**.
+3. Connect GitHub and select the repository `mrshaoshi0-jpg/photo`.
+4. Configure the project:
+   - Production branch: `main`
+   - Framework preset: `None`
+   - Build command: leave blank
+   - Build output directory: `.`
+   - Root directory: `/` (the repository root)
+5. Select **Save and Deploy**. Cloudflare will publish a `*.pages.dev` URL.
+6. Open that URL once in Safari on the iPhone while online. Wait for the page to load, then use **Share** → **Add to Home Screen**.
 
-1. Open the site in **Safari** (must be Safari, not Chrome).
-2. Tap the **Share** button (□↑).
-3. Scroll and tap **Add to Home Screen**.
-4. Confirm the name and tap **Add**.
+Cloudflare Pages Git integration automatically redeploys when new commits are pushed to the connected production branch. You can also create preview deployments for other branches.
 
-The app will open in full-screen standalone mode with the pattern lock.
+## Important privacy and storage notes
 
-## Usage Tips
+- The site does not upload imported photos or videos to a server. Media blobs and albums are stored in IndexedDB in the browser on the device where they were imported.
+- This is a web app, not a native iOS Photos replacement. iOS only provides the files that the user selects through the picker.
+- The pattern lock is an interface lock, **not encryption**. It does not encrypt media stored in IndexedDB and should not be treated as protection against someone with device/browser developer access.
+- Browser storage can be cleared by the user or reclaimed by the operating system. This app has no cloud sync; export important originals and keep a separate backup.
+- Imported files are copies inside this app. Deleting an item here does not delete the original from Apple Photos.
+- Video thumbnail generation depends on iOS/browser codec support. Unsupported video formats may use a generic placeholder.
 
-- First open: draw a pattern (≥4 dots) twice to set the lock.
-- Long-press a photo/video to enter selection mode quickly.
-- Import while inside an album → media goes into that album.
-- Import from Albums list → creates / uses “Recents / 最近项目”.
-- Change pattern: ••• menu → Change Pattern (will reset).
-- Language: top-right 中/EN button.
+## Local development
 
-## Technical Notes
-
-- Pure frontend (HTML + CSS + vanilla JS).
-- Media & albums stored in **IndexedDB** (survives offline & reloads).
-- Pattern stored as simple string (local only).
-- No external CDN dependencies → works fully offline after first visit.
-- Crop is basic (drag the crop box). Video length trim was omitted as requested (only photo crop).
-
-## Browser Support
-
-Best on iOS Safari / modern Chrome / Firefox / Edge.  
-IndexedDB + Service Worker required.
-
----
-
-Made for offline personal use. Enjoy!
+Serve the repository root through a local HTTPS server or deploy it to Cloudflare Pages. Service workers and reliable PWA installation require a secure context. Opening `index.html` directly using `file://` will not test offline behavior.
