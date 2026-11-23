@@ -122,6 +122,7 @@ function updateUITexts() {
     'viewer-crop': 'crop',
     'crop-cancel': 'cancel',
     'crop-done': 'done',
+    'menu-lock': 'lockNow',
     'menu-export': 'export',
     'menu-change-pass': 'changePattern',
     'menu-about': 'about',
