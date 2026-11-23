@@ -85,13 +85,8 @@ async function generateThumbnail(file, maxSize = 400) {
 
       video.addEventListener('loadeddata', function onLoaded() {
         video.removeEventListener('loadeddata', onLoaded);
-        try {
-          // Seek a little to avoid pure black first frame on some videos
-          const t = Math.min(0.5, (video.duration || 1) * 0.1);
-          video.currentTime = t;
-        } catch (e) {
-          captureFrame();
-        }
+        // Capture the first decoded frame for the gallery cover.
+        captureFrame();
       });
 
       video.addEventListener('seeked', function onSeeked() {
