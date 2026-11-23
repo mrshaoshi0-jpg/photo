@@ -1,5 +1,5 @@
 {
-  "name": "Photos / 相册",
+  "name": "Photos / 相簿",
   "short_name": "Photos",
   "description": "Offline photo & video album with pattern lock",
   "start_url": "./index.html",
@@ -21,6 +21,6 @@
       "purpose": "any maskable"
     }
   ],
-  "lang": "zh-CN",
+  "lang": "zh-Hant",
   "categories": ["photo", "utilities"]
 }
