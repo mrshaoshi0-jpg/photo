@@ -422,11 +422,9 @@
       // Reset zoom
       img.style.transform = 'scale(1) translate(0,0)';
       setupPinchZoom(img);
-      $('#viewer-crop').classList.remove('hidden');
     } else {
       video.src = URL.createObjectURL(item.blob);
       video.classList.remove('hidden');
-      $('#viewer-crop').classList.add('hidden');
     }
   }
 
@@ -505,113 +503,6 @@
         apply();
       }
     };
-  }
-
-  // ========== Crop ==========
-  let cropState = { item: null, img: null, scale: 1, offsetX: 0, offsetY: 0 };
-
-  async function openCrop() {
-    const item = state.mediaList[state.viewerIndex];
-    if (!item || item.type !== 'image') return;
-
-    cropState.item = item;
-    const modal = $('#crop-modal');
-    modal.classList.remove('hidden');
-
-    const canvas = $('#crop-canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = URL.createObjectURL(item.blob);
-    await new Promise(r => img.onload = r);
-
-    // Fit to screen
-    const maxW = window.innerWidth;
-    const maxH = window.innerHeight - 100;
-    let w = img.width;
-    let h = img.height;
-    const ratio = Math.min(maxW / w, maxH / h, 1);
-    w *= ratio;
-    h *= ratio;
-    canvas.width = w;
-    canvas.height = h;
-    ctx.drawImage(img, 0, 0, w, h);
-    cropState.img = img;
-    cropState.displayW = w;
-    cropState.displayH = h;
-    cropState.naturalW = img.width;
-    cropState.naturalH = img.height;
-
-    // Default crop box centered square
-    const box = $('#crop-box');
-    const size = Math.min(w, h) * 0.8;
-    box.style.width = size + 'px';
-    box.style.height = size + 'px';
-    box.style.left = ((window.innerWidth - size) / 2) + 'px';
-    box.style.top = ((window.innerHeight - 100 - size) / 2 + 50) + 'px';
-
-    // Simple drag for crop box (basic)
-    makeCropBoxDraggable(box);
-  }
-
-  function makeCropBoxDraggable(box) {
-    let startX, startY, startLeft, startTop;
-    box.ontouchstart = (e) => {
-      const t = e.touches[0];
-      startX = t.clientX;
-      startY = t.clientY;
-      startLeft = parseFloat(box.style.left);
-      startTop = parseFloat(box.style.top);
-    };
-    box.ontouchmove = (e) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      box.style.left = (startLeft + t.clientX - startX) + 'px';
-      box.style.top = (startTop + t.clientY - startY) + 'px';
-    };
-  }
-
-  async function applyCrop() {
-    const box = $('#crop-box');
-    const canvas = $('#crop-canvas');
-    const rect = canvas.getBoundingClientRect();
-    const boxRect = box.getBoundingClientRect();
-
-    // Relative to canvas
-    const scaleX = cropState.naturalW / cropState.displayW;
-    const scaleY = cropState.naturalH / cropState.displayH;
-
-    const x = (boxRect.left - rect.left) * scaleX;
-    const y = (boxRect.top - rect.top) * scaleY;
-    const w = boxRect.width * scaleX;
-    const h = boxRect.height * scaleY;
-
-    const out = document.createElement('canvas');
-    out.width = Math.max(1, Math.round(w));
-    out.height = Math.max(1, Math.round(h));
-    const ctx = out.getContext('2d');
-    ctx.drawImage(cropState.img, x, y, w, h, 0, 0, out.width, out.height);
-
-    const blob = await new Promise(r => out.toBlob(r, 'image/jpeg', 0.92));
-    const thumb = await mediaUtils.generateThumbnail(new File([blob], 'crop.jpg', { type: 'image/jpeg' }));
-
-    // Update media
-    const item = cropState.item;
-    item.blob = blob;
-    item.thumb = thumb;
-    item.size = blob.size;
-    await db.saveMedia(item);
-
-    // Refresh
-    await loadMedia(state.currentAlbumId);
-    closeCrop();
-    closeViewer();
-    toast(t('successCrop'));
-  }
-
-  function closeCrop() {
-    $('#crop-modal').classList.add('hidden');
-    if (cropState.img) URL.revokeObjectURL(cropState.img.src);
-    cropState = {};
   }
 
   // ========== Actions ==========
@@ -722,7 +613,6 @@
 
   function lockApp() {
     if (!state.unlocked) return;
-    closeCrop();
     closeViewer();
     state.unlocked = false;
     $('#more-menu').classList.add('hidden');
@@ -766,9 +656,6 @@
     $('#viewer-close').onclick = closeViewer;
     $('#viewer-prev').onclick = () => viewerNav(-1);
     $('#viewer-next').onclick = () => viewerNav(1);
-    $('#viewer-crop').onclick = openCrop;
-    $('#crop-cancel').onclick = closeCrop;
-    $('#crop-done').onclick = applyCrop;
 
     $('#btn-more').onclick = (e) => {
       e.stopPropagation();
